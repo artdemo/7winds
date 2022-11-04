@@ -1,0 +1,59 @@
+@import '../../scss/constants';
+
+.select {
+  position: relative;
+  background-color: $shark;
+  color: $santas-gray;
+  height: $bar-height;
+  display: flex;
+  align-items: center;
+  padding-left: $gap-m;
+  font-size: 1.4rem;
+  cursor: pointer;
+  border-bottom: 1px solid $ship-gray;
+}
+
+.options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background-color: $shark;
+  color: $white;
+  transition: all 0.2s 0.1s;
+  transform: scale(0);
+  opacity: 0;
+  transform-origin: top;
+
+  @at-root .selectIsOpened {
+    .options {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
+
+.option {
+  height: $bar-height;
+  padding: 0 $gap-m;
+  display: flex;
+  align-items: center;
+
+  &:hover {
+    background-color: $santas-gray;
+  }
+}
+
+.button {
+  color: $white;
+  padding: 13px;
+  margin-left: auto;
+
+  @at-root .selectIsOpened {
+    .button {
+      svg {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}

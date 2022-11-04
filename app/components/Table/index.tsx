@@ -1,156 +1,177 @@
-import React, { FC, useEffect, useMemo, useState, useCallback } from 'react';
-import { Form } from './Form';
-import { Button } from '../Button';
+import React, { FC, useState, useEffect, useMemo, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux/es/exports';
+import { findLastIndex, findNeighboursCount, checkIsDerrived } from '../../utils/helpers';
+import styles from './table.modules.scss';
 
-import { CIWData } from '../../types';
+import { Row } from './Row';
+import { createCIWSelector } from '../../selectors/project';
+import {
+  createTemplateAction,
+  deleteTemplateAction,
+  getProjectsAction,
+  createCIWAction,
+  deleteCIWAction,
+  updateCIWAction,
+} from '../../store/actions/projects';
 
-const mockedRows = [
-  {
-    id: 1,
-    folderId: null,
-    subFolderId: null,
-    rowName: 'Южная строительная площадка',
-    salary: 20348,
-    equipmentCosts: 1750,
-    overheads: 108.07,
-    estimatedProfit: 1209000,
-  },
-  {
-    id: 2,
-    folderId: 1,
-    subFolderId: null,
-    rowName: 'Южная строительная площадка',
-    salary: 20348,
-    equipmentCosts: 1750,
-    overheads: 108.07,
-    estimatedProfit: 1209000,
-  },
-  {
-    id: 3,
-    folderId: 1,
-    subFolderId: 2,
-    rowName: 'Южная строительная площадка',
-    salary: 20348,
-    equipmentCosts: 1750,
-    overheads: 108.07,
-    estimatedProfit: 1209000,
-  },
-  {
-    id: 4,
-    folderId: null,
-    subFolderId: null,
-    rowName: 'Folder',
-    salary: 20348,
-    equipmentCosts: 1750,
-    overheads: 108.07,
-    estimatedProfit: 1209000,
-  },
-];
+import { CIWData, MenuValues, CIWToRender } from '../../types';
+import { ThunkDispatch } from 'redux-thunk';
+import { StateType } from '../../store';
+import { ProjectsActions } from '../../store/actions/projects';
+
+type TableProps = {
+  projectId: number | null;
+  menuValue: MenuValues | null;
+};
 
 const rowTemplate: CIWData = {
   id: -1,
-  folderId: null,
-  subFolderId: null,
+  parentId: null,
+  grandParentId: null,
   rowName: '',
   salary: 0,
   equipmentCosts: 0,
   overheads: 0,
   estimatedProfit: 0,
+  machineOperatorSalary: 0,
+  mainCosts: 0,
+  materials: 0,
+  mimExploitation: 0,
+  supportCosts: 0,
+  total: 0,
 };
 
-type TableProps = {
-  rowsData: CIWData[];
-};
+export const Table: FC<TableProps> = ({ projectId, menuValue }) => {
+  const dispatch = useDispatch<ThunkDispatch<StateType, unknown, ProjectsActions>>();
 
-const headersData = [
-  'Уровень',
-  'Наименование работ',
-  'Основная з/п',
-  'Оборудование',
-  'Накладные расходы',
-  'Сметная прибыль',
-];
+  useEffect(() => {
+    if (projectId === 1) dispatch(getProjectsAction(projectId));
+  }, [projectId]);
 
-export const Table: FC = () => {
-  const [rows, setRows] = useState<CIWData[]>(mockedRows);
+  const rowsData = useSelector(createCIWSelector(projectId, menuValue));
 
-  const createFolder = useCallback(() => {
-    setRows((rows) => [...rows, rowTemplate]);
-  }, [setRows]);
+  const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
-  const createSubFolder = (id: number, folderId: number | null) => {
-    setRows((rows) => {
-      if (!folderId) {
-        for (let i = rows.length - 1; i >= 0; i--) {
-          if (rows[i].folderId === id || rows[i].id === id) {
-            const newRows = [...rows];
-            newRows.splice(i + 1, 0, rowTemplate);
-            return newRows;
-          }
-        }
-      }
+  const clearOnBlur = useCallback(
+    (id: number) => {
+      if (editingRowId === null || editingRowId !== id) return;
 
-      return [...rows];
-    });
-  };
+      editingRowId === -1 && dispatch(deleteTemplateAction(projectId));
 
-  const createRow = (id: number, folderId: number | null, subFolderId: number | null) => {
-    setRows((rows) => {
-      if (!folderId) {
-        for (let i = rows.length - 1; i >= 0; i--) {
-          if (rows[i].folderId === id || rows[i].id === id) {
-            const newRows = [...rows];
-            newRows.splice(i + 1, 0, rowTemplate);
-            return newRows;
-          }
-        }
-      }
-
-      return [...rows];
-    });
-  }
-
-  const deleteRow = useCallback(
-    (id) => {
-      setRows((rows) => rows.filter((row) => row.id !== id));
+      setEditingRowId(null);
     },
-    [setRows]
+    [setEditingRowId, editingRowId, projectId]
   );
 
-  const clearOnBlur = useCallback(() => {
-    setRows((rows) => rows.filter((row) => row.id !== -1));
-  }, [setRows]);
+  const handleSubmit = useCallback(
+    (formData: CIWToRender, id: number) => {
+      if (id === -1) {
+        dispatch(createCIWAction(projectId, formData));
+        return;
+      }
 
-  const handleSubmit = useCallback(() => {
-    setRows((rows) =>
-      rows.map((row) => {
-        if (row.id !== -1) return row;
+      dispatch(updateCIWAction(projectId!, id, formData));
+    },
+    [projectId]
+  );
 
-        return { ...row, id: Math.trunc(Math.random() * 100) };
-      })
-    );
-  }, [setRows]);
+  const handleDelete = useCallback(
+    (rowId: number) => {
+      dispatch(deleteCIWAction(projectId, rowId));
+    },
+    [projectId]
+  );
 
-  const forms = useMemo(() => {
-    return rows.map(({ id, folderId, subFolderId, ...formFields }) => {
-      return (
-        <div key={id}>
-          <div>
-            {!folderId && <Button onClick={createFolder}>1</Button>}
-            {!subFolderId && <Button onClick={() => createSubFolder(id, folderId)}>2</Button>}
-            <Button onClick={() => {}}>3</Button>
-            <Button onClick={() => {}}>Delete</Button>
-          </div>
-          <Form
-            fields={formFields}
-            onBlur={clearOnBlur}
-            isTemplate={id === -1}
-            onSubmit={handleSubmit}
-          />
-        </div>
+  const handleDoubleClick = useCallback(
+    (id: number) => {
+      setEditingRowId(id);
+    },
+    [setEditingRowId]
+  );
+
+  const createTemplate = useCallback(
+    (parentId = null, grandParentId = null) => {
+      const lastIndex = findLastIndex(rowsData, parentId);
+
+      dispatch(
+        createTemplateAction(projectId, lastIndex, { ...rowTemplate, parentId, grandParentId })
       );
-    });
-  }, [rows]);
 
-  return <div>{forms}</div>;
+      setEditingRowId(-1);
+    },
+    [projectId, rowsData]
+  );
+
+  const rows = useMemo(() => {
+    return rowsData.map(
+      (
+        {
+          id,
+          parentId,
+          grandParentId,
+          rowName,
+          salary,
+          equipmentCosts,
+          overheads,
+          estimatedProfit,
+        },
+        index,
+        array
+      ) => {
+        const neighboursCount = findNeighboursCount(array, index, id, parentId, grandParentId);
+
+        const isDerrived = checkIsDerrived(array, id, parentId);
+
+        return (
+          <Row
+            key={id}
+            isFolder={!parentId}
+            isSubFolder={!grandParentId}
+            createFolder={() => createTemplate()}
+            createSubFolder={() => createTemplate(parentId || id)}
+            createChild={() =>
+              createTemplate(grandParentId ? parentId : id, grandParentId || parentId)
+            }
+            deleteRow={() => handleDelete(id)}
+            fields={{ rowName, salary, equipmentCosts, overheads, estimatedProfit }}
+            id={id}
+            onSubmit={handleSubmit}
+            onDoubleClick={handleDoubleClick}
+            onBlur={clearOnBlur}
+            isEditing={id === editingRowId}
+            neighboursCount={neighboursCount}
+            isDerrived={isDerrived}
+          />
+        );
+      }
+    );
+  }, [rowsData, projectId, clearOnBlur, createTemplate, handleSubmit, handleDelete, editingRowId]);
+
+  return (
+    <>
+      {menuValue === 'ciw' && (
+        <table className={styles.table}>
+          <colgroup>
+            <col className={styles.colBtns} />
+            <col className={styles.colName} />
+            <col className={styles.colCommon} />
+            <col className={styles.colCommon} />
+            <col className={styles.colCommon} />
+            <col className={styles.colCommon} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th className={styles.cellBtns}>Уровень</th>
+              <th>Наименование работ</th>
+              <th>Основная з/п</th>
+              <th>Оборудование</th>
+              <th>Накладные расходы</th>
+              <th>Сметная прибыль</th>
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+      )}
+    </>
+  );
 };

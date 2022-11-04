@@ -1,0 +1,39 @@
+@import '../../scss/constants';
+
+.wrapper {
+  border: 1px dashed blue;
+}
+
+.table {
+  font-size: 1.4rem;
+  border-collapse: collapse;
+  margin: 0 10px;
+
+  th {
+    height: 42px;
+  }
+
+  td {
+    height: $row-height;
+    color: $white;
+  }
+
+  td,
+  th {
+    border-bottom: 1px solid $ship-gray;
+    text-align: left;
+    padding: 0 12px;
+  }
+}
+
+.colBtns {
+  width: 12%;
+}
+
+.colName {
+  width: 40%;
+}
+
+.colCommon {
+  max-width: 12%;
+}

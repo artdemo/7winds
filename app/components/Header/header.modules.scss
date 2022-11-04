@@ -1,0 +1,19 @@
+@import '../../scss/constants';
+
+.wrapper {
+  background-color: $shark;
+  height: $bar-height;
+  display: flex;
+  border-bottom: 1px solid $ship-gray;
+
+}
+
+.title {
+  margin: 0;
+  font-size: 1.8rem;
+  color: $white;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid $ship-gray;
+}

@@ -1,0 +1,48 @@
+@import '../../scss/constants';
+
+.wrapper {
+  display: flex;
+  height: 100%;
+}
+
+.aside {
+  width: 234px;
+  flex-shrink: 0;
+  background-color: $shark;
+  border-right: 1px solid $ship-gray;
+}
+
+.label {
+  p {
+    margin: 0;
+    line-height: 7px;
+  }
+
+  span {
+    font-size: 1rem;
+  }
+}
+
+.menuItem {
+  color: $white;
+  min-height: 32px;
+  padding: 0 $gap-m;
+  display: flex;
+  align-items: center;
+  font-size: 1.4rem;
+  cursor: pointer;
+
+  &Selected,
+  &:hover {
+    background-color: $santas-gray;
+  }
+}
+
+.menuText {
+  margin-left: 16px;
+}
+
+.main {
+  flex-grow: 1;
+  background-color: $deep-shark;
+}

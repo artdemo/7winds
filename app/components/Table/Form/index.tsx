@@ -8,84 +8,98 @@ import React, {
   ChangeEvent,
   FormEventHandler,
   ChangeEventHandler,
+  Fragment,
 } from 'react';
 import { useClickOutside } from '../../../hooks/useClickOutside';
-
-// import { CIWData } from '../../../types';
-
-// type Fields = Omit<CIWData, 'folderId' | 'subFolderId' | 'id'>;
+import styles from './form.modules.scss';
 
 type FormProps = {
-  //   fields: Fields;
-  // id: number;
   fields: Record<string, string | number>;
-  isTemplate: boolean;
+  isEditing: boolean;
   onBlur: () => void;
-  onSubmit: () => void;
+  onSubmit: (formData: Record<string, string | number>) => void;
+  onDoubleClick?: () => void;
+  id: number;
 };
 
-export const Form: FC<FormProps> = ({ fields, onBlur, onSubmit, isTemplate }) => {
+export const Form: FC<FormProps> = ({ fields, onBlur, onSubmit, onDoubleClick, isEditing, id }) => {
   const [formData, setFormData] = useState<typeof fields>(fields);
-  const [isEditing, setIsEditing] = useState(isTemplate);
 
   useEffect(() => {
     isEditing && refInput.current && refInput.current.focus();
   }, [isEditing]);
 
-  const refForm = useClickOutside(() => {
-    isEditing && onBlur();
-    setIsEditing(false);
-  });
+  const refRow = useClickOutside(onBlur);
 
   const refInput = useRef<HTMLInputElement>(null);
 
   const handleInputChange: ChangeEventHandler<HTMLInputElement> = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      setFormData((fields) => ({ ...fields, [e.target.name]: e.target.value }));
+      const typeOfField = typeof fields[e.target.name];
+
+      if (typeOfField === 'number' && isNaN(Number(e.target.value))) return;
+
+      setFormData((fields) => {
+        return {
+          ...fields,
+          [e.target.name]: typeOfField === 'number' ? Number(e.target.value) : e.target.value,
+        };
+      });
     },
     [setFormData]
   );
 
-  const handleDoubleClick: FormEventHandler<HTMLFormElement> = useCallback(() => {
-    setIsEditing(true);
-  }, [isEditing, setIsEditing]);
+  const handleSubmit: FormEventHandler<HTMLFormElement> = useCallback(
+    (e) => {
+      e.preventDefault();
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = useCallback((e) => {
-    e.preventDefault();
-
-    onSubmit();
-  }, []);
+      onSubmit(formData);
+    },
+    [onSubmit, formData]
+  );
 
   const renderInputs = useMemo(() => {
     return Object.entries(fields).map(([name, value], index) => {
       return (
-        <input
-          key={name}
-          type="text"
-          name={name}
-          value={formData[name]}
-          required
-          pattern={typeof value === 'string' ? undefined : '[+-]?([0-9]*[.])?[0-9]+'}
-          onChange={handleInputChange}
-          {...(!index && { ref: refInput })}
-        />
+        <td key={name}>
+          <input
+            form={String(id)}
+            type="text"
+            name={name}
+            value={formData[name]}
+            required
+            onChange={handleInputChange}
+            {...(!index && { ref: refInput })}
+            style={
+              {
+                // pointerEvents: isEditing ? 'auto' : 'none',
+              }
+            }
+          />
+        </td>
       );
     });
-  }, [fields, formData, isEditing]);
+  }, [fields, formData, isEditing, handleInputChange]);
 
   return (
-    <form
-      ref={refForm}
-      onDoubleClick={handleDoubleClick}
-      onSubmit={handleSubmit}
-      style={{
-        border: '1px solid ',
-        borderColor: 'black',
-        ...(isEditing && { borderColor: 'red' }),
-      }}
-    >
+    <Fragment>
+      <td style={{ display: 'none' }}>
+        <form
+          id={String(id)}
+          // ref={refForm}
+          onDoubleClick={onDoubleClick}
+          onSubmit={handleSubmit}
+          style={{
+            border: '1px solid ',
+            borderColor: 'black',
+            ...(isEditing && { borderColor: 'red' }),
+            display: 'none',
+          }}
+        >
+          <button type="submit">Submit</button>
+        </form>
+      </td>
       {renderInputs}
-      <button type="submit">Submit</button>
-    </form>
+    </Fragment>
   );
 };
