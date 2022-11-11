@@ -61,7 +61,8 @@ module.exports = (env, options) => {
             {
               test: /\.svg$/i,
               issuer: /\.[jt]sx?$/,
-              use: ['@svgr/webpack', 'file-loader'],
+              // use: ['@svgr/webpack', 'file-loader'],
+              use: ['@svgr/webpack', 'file-loader', 'svgo-loader'],
             },
           ],
         },
@@ -70,7 +71,7 @@ module.exports = (env, options) => {
     resolve: {
       extensions: ['.tsx', '.ts', '.js'],
     },
-    devtool: options.mode === 'development' ? 'inline-source-map' : '',
+    devtool: options.mode === 'development' ? 'inline-source-map' : undefined,
     devServer: {
       port: 3000,
       host: '0.0.0.0',

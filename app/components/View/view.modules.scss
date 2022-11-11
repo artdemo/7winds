@@ -2,7 +2,7 @@
 
 .wrapper {
   display: flex;
-  height: 100%;
+  min-height: inherit;
 }
 
 .aside {
@@ -45,4 +45,8 @@
 .main {
   flex-grow: 1;
   background-color: $deep-shark;
+}
+
+.tableWrapper {
+  padding: 0 10px;
 }

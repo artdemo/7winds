@@ -1,13 +1,9 @@
 @import '../../scss/constants';
 
-.wrapper {
-  border: 1px dashed blue;
-}
-
 .table {
   font-size: 1.4rem;
   border-collapse: collapse;
-  margin: 0 10px;
+  width: 100%;
 
   th {
     height: 42px;
@@ -22,18 +18,18 @@
   th {
     border-bottom: 1px solid $ship-gray;
     text-align: left;
-    padding: 0 12px;
+    padding-left: 12px;
   }
 }
 
 .colBtns {
-  width: 12%;
+  width: 6%;
 }
 
 .colName {
-  width: 40%;
+  width: 44%;
 }
 
 .colCommon {
-  max-width: 12%;
+  max-width: 13%;
 }

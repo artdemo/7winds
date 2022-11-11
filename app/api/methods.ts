@@ -1,5 +1,3 @@
-import { CIWUpdateRequest } from "../types";
-
 export const GET = (path: string) =>
   fetch(`${process.env.BASE_URL}/${path}`).then((response) => response.json());
 
@@ -16,8 +14,3 @@ export const DELETE = (path: string) =>
   fetch(`${process.env.BASE_URL}/${path}`, {
     method: 'DELETE',
   }).then((response) => response.json());
-
-// export const UPDATE = (path: string, body: CIWUpdateRequest) =>
-//   fetch(`${process.env.BASE_URL}/${path}`, {
-//     method: 'POST',
-//   }).then((response) => response.json());

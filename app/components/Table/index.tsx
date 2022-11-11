@@ -1,10 +1,13 @@
 import React, { FC, useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux/es/exports';
-import { findLastIndex, findNeighboursCount, checkIsDerrived } from '../../utils/helpers';
+import { findDescendantsCount } from '../../utils/helpers';
 import styles from './table.modules.scss';
-
 import { Row } from './Row';
-import { createCIWSelector } from '../../selectors/project';
+import { MenuValues, CIWToRender, RequestStatus } from '../../types';
+import { ThunkDispatch } from 'redux-thunk';
+import { StateType } from '../../store';
+import { ProjectsActions } from '../../store/actions/projects';
+import { createCIWSelector, requestStatusSelector } from '../../selectors/project';
 import {
   createTemplateAction,
   deleteTemplateAction,
@@ -13,55 +16,52 @@ import {
   deleteCIWAction,
   updateCIWAction,
 } from '../../store/actions/projects';
-
-import { CIWData, MenuValues, CIWToRender } from '../../types';
-import { ThunkDispatch } from 'redux-thunk';
-import { StateType } from '../../store';
-import { ProjectsActions } from '../../store/actions/projects';
+import { rowTemplate } from '../../constants/templates';
 
 type TableProps = {
   projectId: number | null;
   menuValue: MenuValues | null;
 };
 
-const rowTemplate: CIWData = {
-  id: -1,
-  parentId: null,
-  grandParentId: null,
-  rowName: '',
-  salary: 0,
-  equipmentCosts: 0,
-  overheads: 0,
-  estimatedProfit: 0,
-  machineOperatorSalary: 0,
-  mainCosts: 0,
-  materials: 0,
-  mimExploitation: 0,
-  supportCosts: 0,
-  total: 0,
-};
-
 export const Table: FC<TableProps> = ({ projectId, menuValue }) => {
   const dispatch = useDispatch<ThunkDispatch<StateType, unknown, ProjectsActions>>();
+  const rowsData = useSelector(createCIWSelector(projectId, menuValue));
+  const requestStatus = useSelector(requestStatusSelector(projectId));
 
   useEffect(() => {
-    if (projectId === 1) dispatch(getProjectsAction(projectId));
-  }, [projectId]);
-
-  const rowsData = useSelector(createCIWSelector(projectId, menuValue));
+    dispatch(getProjectsAction(projectId));
+  }, [projectId, dispatch]);
 
   const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
-  const clearOnBlur = useCallback(
-    (id: number) => {
-      if (editingRowId === null || editingRowId !== id) return;
+  const createTemplate = useCallback(
+    (parentId = null, grandParentId = null) => {
+      dispatch(createTemplateAction(projectId, { ...rowTemplate, parentId, grandParentId }));
 
-      editingRowId === -1 && dispatch(deleteTemplateAction(projectId));
-
-      setEditingRowId(null);
+      setEditingRowId(-1);
     },
-    [setEditingRowId, editingRowId, projectId]
+    [projectId, setEditingRowId, dispatch]
   );
+
+  useEffect(() => {
+    if (!rowsData.length && requestStatus === RequestStatus.SUCCESS) createTemplate();
+  }, [rowsData, createTemplate, requestStatus]);
+
+  const stopEditing = useCallback(() => {
+    if (editingRowId === null) return;
+
+    if (editingRowId === -1) dispatch(deleteTemplateAction(projectId));
+
+    setEditingRowId(null);
+  }, [setEditingRowId, editingRowId, projectId, dispatch]);
+
+  useEffect(() => {
+    document.addEventListener('click', stopEditing);
+
+    return () => {
+      document.removeEventListener('click', stopEditing);
+    };
+  }, [stopEditing]);
 
   const handleSubmit = useCallback(
     (formData: CIWToRender, id: number) => {
@@ -72,34 +72,21 @@ export const Table: FC<TableProps> = ({ projectId, menuValue }) => {
 
       dispatch(updateCIWAction(projectId!, id, formData));
     },
-    [projectId]
+    [projectId, dispatch]
   );
 
   const handleDelete = useCallback(
     (rowId: number) => {
       dispatch(deleteCIWAction(projectId, rowId));
     },
-    [projectId]
+    [projectId, dispatch]
   );
 
-  const handleDoubleClick = useCallback(
+  const changeEditingRowId = useCallback(
     (id: number) => {
       setEditingRowId(id);
     },
     [setEditingRowId]
-  );
-
-  const createTemplate = useCallback(
-    (parentId = null, grandParentId = null) => {
-      const lastIndex = findLastIndex(rowsData, parentId);
-
-      dispatch(
-        createTemplateAction(projectId, lastIndex, { ...rowTemplate, parentId, grandParentId })
-      );
-
-      setEditingRowId(-1);
-    },
-    [projectId, rowsData]
   );
 
   const rows = useMemo(() => {
@@ -118,9 +105,7 @@ export const Table: FC<TableProps> = ({ projectId, menuValue }) => {
         index,
         array
       ) => {
-        const neighboursCount = findNeighboursCount(array, index, id, parentId, grandParentId);
-
-        const isDerrived = checkIsDerrived(array, id, parentId);
+        const descendantsCount = findDescendantsCount(array, id);
 
         return (
           <Row
@@ -136,16 +121,23 @@ export const Table: FC<TableProps> = ({ projectId, menuValue }) => {
             fields={{ rowName, salary, equipmentCosts, overheads, estimatedProfit }}
             id={id}
             onSubmit={handleSubmit}
-            onDoubleClick={handleDoubleClick}
-            onBlur={clearOnBlur}
+            onDoubleClick={changeEditingRowId}
             isEditing={id === editingRowId}
-            neighboursCount={neighboursCount}
-            isDerrived={isDerrived}
+            onClear={stopEditing}
+            descendantsCount={descendantsCount}
           />
         );
       }
     );
-  }, [rowsData, projectId, clearOnBlur, createTemplate, handleSubmit, handleDelete, editingRowId]);
+  }, [
+    rowsData,
+    createTemplate,
+    handleSubmit,
+    handleDelete,
+    editingRowId,
+    stopEditing,
+    changeEditingRowId,
+  ]);
 
   return (
     <>

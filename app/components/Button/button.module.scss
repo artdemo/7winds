@@ -4,4 +4,12 @@
     cursor: pointer;
     padding: 0px;
     color: currentColor;
+
+    & > * {
+        display: block;
+    }
+}
+
+.isDisabled {
+    cursor: auto;
 }

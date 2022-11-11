@@ -1,13 +1,13 @@
-import { CIWData } from '../types';
+import { CIWData, CIWResponse } from '../types';
 
 export const normalizeCIW = (
-  request: { [key: string]: any }[],
-  parentId = null,
-  grandParentId = null
+  response: CIWResponse[],
+  parentId: null | number = null,
+  grandParentId: number | null = null
 ): CIWData[] => {
-  let result: CIWData[] = [];
+  const result: CIWData[] = [];
 
-  request.forEach((obj) => {
+  response.forEach((obj) => {
     const { child, ...rest } = obj;
 
     result.push({ ...rest, parentId, grandParentId } as CIWData);
@@ -36,86 +36,16 @@ export const findLastIndex = (arr: Row[], id: number | null) => {
   return -1;
 };
 
-export const findNeighboursCount = (
-  arr: Row[],
-  index: number,
-  id: number,
-  parentId: number | null,
-  grandParentId: number | null
-) => {
-  let neighboursCount = 0;
+export const findDescendantsCount = (rows: Row[], id: number) => {
+  let isLastDescendant = true;
 
-  if (parentId === null) {
-    let hasSibling = false;
+  return rows.reduceRight((count, row) => {
+    if (isLastDescendant && row.parentId === id) isLastDescendant = false;
 
-    for (let i = index + 1; i < arr.length; i++) {
-      const nextNeighbour = arr[i];
+    if (isLastDescendant) return count;
 
-      if (nextNeighbour.parentId === id || nextNeighbour.grandParentId === id) {
-        neighboursCount++;
-        continue;
-      }
+    if (row.parentId === id || row.grandParentId === id) ++count;
 
-      if (nextNeighbour.parentId === parentId) {
-        neighboursCount++;
-        hasSibling = true;
-      }
-    }
-
-    if (!hasSibling && neighboursCount !== 0) {
-      neighboursCount = 1;
-    }
-
-    return neighboursCount;
-  }
-
-  if (grandParentId === null) {
-    let hasSibling = false;
-
-    for (let i = index + 1; i < arr.length; i++) {
-      const nextNeighbour = arr[i];
-
-      if (nextNeighbour.grandParentId === parentId) {
-        neighboursCount++;
-        continue;
-      }
-
-      if (nextNeighbour.parentId === parentId) {
-        neighboursCount++;
-        hasSibling = true;
-      }
-    }
-
-    if (!hasSibling && neighboursCount !== 0) neighboursCount = 1;
-
-    return neighboursCount;
-  }
-
-  if (arr[index + 1]?.grandParentId === grandParentId) neighboursCount += 1;
-
-  return neighboursCount;
-};
-
-export const checkIsDerrived = (array: Row[], id: number, parentId: number | null) => {
-  if (parentId === null) return false;
-
-  let parentIdOfParent;
-  let isParentHasSibling = false;
-  let firstSiblingId = null;
-
-  for (let i = 0; i < array.length; i++) {
-    if (array[i].id === parentId) {
-      parentIdOfParent = array[i].parentId;
-      continue;
-    }
-
-    if (!firstSiblingId && array[i].parentId === parentId) firstSiblingId = array[i].id;
-
-    if (array[i].parentId === parentIdOfParent) {
-      isParentHasSibling = true;
-      break;
-    }
-  }
-
-  return isParentHasSibling || firstSiblingId === id;
+    return count;
+  }, 0);
 };

@@ -1,10 +1,12 @@
+import { findLastIndex } from './../../utils/helpers';
 import { Actions } from './../types/projects';
 import { ProjectsActions } from '../actions/projects';
-import { CIWData } from '../../types';
+import { CIWData, RequestStatus } from '../../types';
 
 type ProjectsStateType = {
   [id: number]: {
     ciw: CIWData[];
+    requestStatus?: RequestStatus;
   };
 };
 
@@ -13,16 +15,33 @@ export const projectsReducer = (
   action: ProjectsActions
 ): ProjectsStateType => {
   switch (action.type) {
-    case Actions.SET_CIW:
+    case Actions.GET_CIW:
       return {
         ...state,
         ...action.payload,
       };
 
-    case Actions.CREATE_TEMPLATE:
+    case Actions.GET_CIW_REQUEST:
+    case Actions.GET_CIW_FAILURE:
+    case Actions.GET_CIW_SUCCESS:
+      return {
+        ...state,
+        [action.payload.id]: {
+          ...state[action.payload.id],
+          requestStatus: action.payload.requestStatus,
+        },
+      };
+
+    case Actions.CREATE_TEMPLATE: {
       const newRows = [...state[action.payload.projectId].ciw];
 
-      newRows.splice(action.payload.index + 1, 0, action.payload.rowTemplate);
+      const oldTemplateIndex = newRows.findIndex((row) => row.id === -1);
+
+      if (oldTemplateIndex !== -1) newRows.splice(oldTemplateIndex, 1);
+
+      const lastIndex = findLastIndex(newRows, action.payload.rowTemplate.parentId);
+
+      newRows.splice(lastIndex + 1, 0, action.payload.rowTemplate);
 
       return {
         ...state,
@@ -31,6 +50,7 @@ export const projectsReducer = (
           ciw: newRows,
         },
       };
+    }
 
     case Actions.DELETE_TEMPLATE:
       return {

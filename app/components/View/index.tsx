@@ -1,38 +1,12 @@
-import React, { FC, useMemo, useState, useCallback } from 'react';
+import React, { FC, useMemo, useState, useCallback, KeyboardEventHandler, Key } from 'react';
 import cn from 'classnames';
-
 import { Select } from '../Select';
 import { Header } from '../Header';
 import { Table } from '../Table';
 import { ReactComponent as Icon } from '../../assets/svg/default.svg';
-
-import { MenuItemsProps, MenuValues } from '../../types';
-
+import { MenuValues } from '../../types';
 import styles from './view.modules.scss';
-
-const options = [
-  { name: 'First name', value: 1 },
-  { name: 'Second name', value: 2 },
-  { name: 'Third name', value: 3 },
-];
-
-const menuItems = [
-  { label: 'По проекту', value: 'placeholder', title: 'По проекту' },
-  { label: 'Объекты', value: 'placeholder', title: 'Объекты' },
-  { label: 'РД', value: 'placeholder', title: 'РД' },
-  { label: 'МТО', value: 'placeholder', title: 'МТО' },
-  { label: 'СМР', value: 'ciw', title: 'Строительно-монтажные работы' },
-  { label: 'График', value: 'placeholder', title: 'График' },
-  { label: 'МиМ', value: 'placeholder', title: 'МиМ' },
-  { label: 'Рабочие', value: 'placeholder', title: 'Рабочие' },
-  { label: 'Капвложения', value: 'placeholder', title: 'Капвложения' },
-  { label: 'Бюджет', value: 'placeholder', title: 'Бюджет' },
-  { label: 'Финансирование', value: 'placeholder', title: 'Финансирование' },
-  { label: 'Панорамы', value: 'placeholder', title: 'Панорамы' },
-  { label: 'Камеры', value: 'placeholder', title: 'Камеры' },
-  { label: 'Поручения', value: 'placeholder', title: 'Поручения' },
-  { label: 'Контрагенты', value: 'placeholder', title: 'Контрагенты' },
-];
+import { options, menuItems } from '../../constants/templates';
 
 export const View: FC = () => {
   const [selectedMenuIndex, setSelectedMenuIndex] = useState<number | null>(4);
@@ -48,12 +22,23 @@ export const View: FC = () => {
     [setSelectedProjectId]
   );
 
+  const handleKeyPress = useCallback(
+    (index: number): KeyboardEventHandler =>
+      (e) => {
+        if (e.code !== 'Enter') return;
+
+        setSelectedMenuIndex(index);
+      },
+    [setSelectedMenuIndex]
+  );
+
   const menuList = useMemo(() => {
     return (
       <ul className={styles.menuList}>
-        {menuItems.map(({ label, value, title }, index) => {
+        {menuItems.map(({ label }, index) => {
           return (
             <li
+              tabIndex={0}
               className={cn({
                 [styles.menuItem]: true,
                 [styles.menuItemSelected]: index === selectedMenuIndex,
@@ -62,6 +47,7 @@ export const View: FC = () => {
               onClick={() => {
                 setSelectedMenuIndex(index);
               }}
+              onKeyPress={handleKeyPress(index)}
             >
               <Icon className={styles.icon} />
               <span className={styles.menuText}>{label}</span>
@@ -70,7 +56,7 @@ export const View: FC = () => {
         })}
       </ul>
     );
-  }, [setSelectedMenuIndex, selectedMenuIndex]);
+  }, [setSelectedMenuIndex, selectedMenuIndex, handleKeyPress]);
 
   return (
     <div className={styles.wrapper}>
@@ -89,7 +75,9 @@ export const View: FC = () => {
       </div>
       <div className={styles.main}>
         <Header title={title} />
-        <Table projectId={selectedProjectId} menuValue={value as MenuValues} />
+        <div className={styles.tableWrapper}>
+          <Table projectId={selectedProjectId} menuValue={value as MenuValues} />
+        </div>
       </div>
     </div>
   );

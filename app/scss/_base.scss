@@ -1,11 +1,10 @@
-//=============================RESET============================
+//================RESET===============
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  overflow: scroll;
 }
 
 a {
@@ -23,10 +22,14 @@ input {
   -webkit-appearance: none;
 }
 
-//======================TYPO================
+//=================TYPO================
 html {
   font-family: 'Roboto', sans-serif;
   font-size: 10px;
   color: $santas-gray;
+}
 
+//=====================================
+:global(#root){
+  min-height: 100vh;
 }

@@ -2,38 +2,38 @@ import React, {
   FC,
   useCallback,
   useState,
-  useRef,
   useMemo,
   ChangeEventHandler,
   ChangeEvent,
   FormEvent,
+  KeyboardEventHandler,
+  MouseEventHandler,
+  MouseEvent,
 } from 'react';
 import cn from 'classnames';
+import FocusTrap from 'focus-trap-react';
 
 import { ReactComponent as FolderIcon } from '../../../assets/svg/folder.svg';
 import { ReactComponent as SubFolderIcon } from '../../../assets/svg/subfolder.svg';
 import { ReactComponent as ListIcon } from '../../../assets/svg/list.svg';
 import { ReactComponent as TrashIcon } from '../../../assets/svg/trash.svg';
-
 import { Button } from '../../Button';
-import { useClickOutside } from '../../../hooks/useClickOutside';
 import styles from './row.modules.scss';
 
 type RowProps = {
   isFolder: boolean;
   isSubFolder: boolean;
-  createFolder: () => void;
-  createSubFolder: () => void;
-  createChild: () => void;
-  deleteRow: () => void;
+  createFolder?: () => void;
+  createSubFolder?: () => void;
+  createChild?: () => void;
+  deleteRow?: () => void;
   fields: Record<string, string | number>;
   id: number;
   onSubmit: (formData: Record<string, string | number>, id: number) => void;
-  onDoubleClick: (id: number) => void;
-  onBlur: (id: number) => void;
+  onDoubleClick?: (id: number) => void;
   isEditing: boolean;
-  neighboursCount: number;
-  isDerrived: boolean;
+  onClear: () => void;
+  descendantsCount: number;
 };
 
 export const Row: FC<RowProps> = ({
@@ -47,20 +47,15 @@ export const Row: FC<RowProps> = ({
   id,
   onSubmit,
   onDoubleClick,
-  onBlur,
   isEditing,
-  neighboursCount,
-  isDerrived,
+  descendantsCount,
+  onClear,
 }) => {
   const [formData, setFormData] = useState<typeof fields>(fields);
 
-  const refInput = useRef<HTMLInputElement>(null);
-
-  const handleClickOutside = useCallback(() => {
-    onBlur(id);
-  }, [isEditing]);
-
-  const refRow = useClickOutside(handleClickOutside);
+  const handleEscape: KeyboardEventHandler = (e) => {
+    if (e.code === 'Escape' && onClear) onClear();
+  };
 
   const handleInputChange: ChangeEventHandler<HTMLInputElement> = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -75,7 +70,7 @@ export const Row: FC<RowProps> = ({
         };
       });
     },
-    [setFormData]
+    [setFormData, fields]
   );
 
   const handleSubmit = useCallback(
@@ -84,37 +79,60 @@ export const Row: FC<RowProps> = ({
 
       onSubmit(formData, id);
     },
-    [onSubmit, formData, id]
+    [onSubmit, formData]
   );
 
   const renderBtns = useMemo(() => {
     return (
       <td>
         <div
+          onDoubleClick={(e: MouseEvent) => {
+            e.stopPropagation();
+          }}
+          onClick={(e: MouseEvent) => {
+            e.stopPropagation();
+          }}
           className={cn({
             [styles.btnsWrapper]: true,
-            [styles.btnsWrapperIsDerrived]: isDerrived,
+            [styles.btnsWrapperIsDerrived]: !isFolder,
             [styles.btnsWrapperShift]: !isFolder,
             [styles.btnsWrapperDoubleShift]: !isSubFolder,
+            [styles.btnsWrapperIsHovered]: !isEditing,
           })}
         >
           {isFolder && (
-            <Button onClick={createFolder} className={`${styles.btn} ${styles.btnFolder}`}>
+            <Button
+              onClick={createFolder}
+              className={`${styles.btn} ${styles.btnFolder}`}
+              disabled={isEditing}
+            >
               <FolderIcon />
             </Button>
           )}
           {isSubFolder && (
-            <Button onClick={createSubFolder} className={`${styles.btn} ${styles.btnSubFolder}`}>
+            <Button
+              onClick={createSubFolder}
+              className={`${styles.btn} ${styles.btnSubFolder}`}
+              disabled={isEditing}
+            >
               <SubFolderIcon />
             </Button>
           )}
-          <Button onClick={createChild} className={`${styles.btn} ${styles.btnList}`}>
+          <Button
+            onClick={createChild}
+            className={`${styles.btn} ${styles.btnList}`}
+            disabled={isEditing}
+          >
             <ListIcon />
           </Button>
-          <Button onClick={deleteRow} className={`${styles.btn} ${styles.btnDelete}`}>
+          <Button
+            onClick={deleteRow}
+            className={`${styles.btn} ${styles.btnDelete}`}
+            disabled={isEditing}
+          >
             <TrashIcon />
           </Button>
-          <span className={styles.bar} style={{ height: `${neighboursCount * 60}px` }}></span>
+          <span className={styles.bar} style={{ height: `${descendantsCount * 60}px` }}></span>
         </div>
       </td>
     );
@@ -124,13 +142,17 @@ export const Row: FC<RowProps> = ({
     createFolder,
     createSubFolder,
     createChild,
-    neighboursCount,
-    isDerrived,
+    descendantsCount,
     isEditing,
+    deleteRow,
   ]);
 
+  const handleClick: MouseEventHandler<HTMLTableRowElement> = (e) => {
+    if (isEditing) e.stopPropagation();
+  };
+
   const renderInputs = useMemo(() => {
-    return Object.entries(fields).map(([name, value], index) => {
+    return Object.entries(fields).map(([name]) => {
       return (
         <td key={name}>
           <input
@@ -140,33 +162,38 @@ export const Row: FC<RowProps> = ({
             value={formData[name]}
             required
             onChange={handleInputChange}
-            {...(!index && { ref: refInput })}
-            className={cn({ [styles.input]: true, [styles.inputIsEditing]: isEditing })}
+            className={cn({ [styles.input]: true, [styles.inputActive]: isEditing })}
+            {...(!isEditing && { tabIndex: -1 })}
           />
         </td>
       );
     });
-  }, [fields, formData, handleInputChange, isEditing]);
+  }, [fields, formData, handleInputChange, isEditing, id]);
 
   return (
-    <tr
-      onDoubleClick={() => onDoubleClick(id)}
-      ref={refRow}
-      className={cn({ [styles.rowIsEditing]: isEditing })}
-    >
-      {renderBtns}
-      {renderInputs}
-      <td style={{ display: 'none' }}>
-        <form
-          id={String(id)}
-          onSubmit={(e) => {
-            handleSubmit(e, id);
-          }}
-          style={{ display: 'none' }}
-        >
-          <button type="submit">Submit</button>
-        </form>
-      </td>
-    </tr>
+    <FocusTrap active={isEditing} focusTrapOptions={{ clickOutsideDeactivates: true }}>
+      <tr
+        onDoubleClick={() => {
+          onDoubleClick && onDoubleClick(id);
+        }}
+        onKeyDown={handleEscape}
+        className={cn({ [styles.rowIsEditing]: isEditing })}
+        onClick={handleClick}
+      >
+        {renderBtns}
+        {renderInputs}
+        <td style={{ display: 'none' }}>
+          <form
+            id={String(id)}
+            onSubmit={(e) => {
+              handleSubmit(e, id);
+            }}
+            style={{ display: 'none' }}
+          >
+            <button type="submit">Submit</button>
+          </form>
+        </td>
+      </tr>
+    </FocusTrap>
   );
 };

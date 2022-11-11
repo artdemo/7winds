@@ -34,12 +34,12 @@ export const NavBar: FC = () => {
   return (
     <ul className={styles.list}>
       <li className={styles.item}>
-        <Button onClick={() => {}} className={styles.icon}>
+        <Button className={styles.icon}>
           <AppIcon />
         </Button>
       </li>
       <li className={styles.item}>
-        <Button onClick={() => {}} className={styles.icon}>
+        <Button className={styles.icon}>
           <ReplyIcon />
         </Button>
       </li>

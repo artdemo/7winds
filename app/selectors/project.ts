@@ -13,3 +13,9 @@ export const createCIWSelector =
 
     return state.projects[projectId][menuValue];
   };
+
+export const requestStatusSelector = (projectId: number | null) => (state: StateType) => {
+  if (projectId === null) return null;
+
+  return state.projects[projectId]?.requestStatus;
+};

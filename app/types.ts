@@ -18,6 +18,10 @@ export interface CIW {
   total: number;
   supportCosts: number;
 }
+
+export interface CIWResponse extends CIW {
+  child: CIWResponse[];
+}
 export interface CIWCreateRequest extends CIW {
   parentId: number | null;
 }
@@ -32,10 +36,16 @@ export type CIWToRender = Pick<
 
 export type CIWUpdateRequest = Omit<CIW, 'total' | 'id'>;
 
+export type MenuValues = 'ciw';
+
 export type MenuItemsProps = {
   label: string;
   values: MenuValues;
   title: string;
 };
 
-export type MenuValues = 'ciw';
+export enum RequestStatus {
+  REQUEST = 'loading',
+  FAILURE = 'failed',
+  SUCCESS = 'succeeded',
+}
