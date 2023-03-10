@@ -1,4 +1,4 @@
-<h1>Тестовое для 7winds</h2>
+<h1>7winds</h2>
 <ul>
   <li>
 <a href="https://sixth-ferry-a86.notion.site/f0f1e825bcc643159de00bdf16c63b19">ТЗ</a>
